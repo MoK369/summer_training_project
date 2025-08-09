@@ -26,7 +26,7 @@ export const softDeletePost = async (req, res, next) => {
   try {
     const postId = req.params.id;
     const createPostQuery = `
-        UPDATE posts SET deletedAt=? where id =?
+        UPDATE posts SET deletedAt=? where id =? AND deletedAt is NULL;
         `;
     const result = await connection.execute(createPostQuery, [
       getCurrentTimestamp(),
