@@ -29,7 +29,7 @@ export const signUp = async (req, res, next) => {
 
 export const signIn = async (req, res, next) => {
   try {
-    let { email = null, password = null } = req.body;
+    let { email = null, password = null } = req.body || {};
     userValidation({ email, password });
     const selectUserWithEmailQuery = `
   SELECT * from users WHERE email=? LIMIT 1;

@@ -2,11 +2,12 @@
 import { connection } from "../../db/db.connection.js";
 import { userValidation } from "../../db/models/users.model.js";
 import { CustomError } from "../../utils/custom_error.js";
+import { getCurrentTimestamp } from "../../utils/get_current_timestamp.js";
 
 export const updateUserInfo = async (req, res, next) => {
   try {
     const userId = req.params.id;
-    let { name = null, email = null } = req.body;
+    let { name = null, email = null } = req.body || {};
     userValidation({ name, email }, { validateOnlyIfNotUndifinedOrNull: true });
     if (name == null && email == null) {
       throw new CustomError("Nothing to update", 400);
@@ -21,7 +22,8 @@ export const updateUserInfo = async (req, res, next) => {
     }
     const query = `
       UPDATE users SET name= if(? is NOT NULL,?,?),
-      email= if(? is NOT NULL,?,?)
+      email= if(? is NOT NULL,?,?),
+      updatedAt = ?
       where id=?
       `;
     const updateResult = await connection.execute(query, [
@@ -31,6 +33,7 @@ export const updateUserInfo = async (req, res, next) => {
       email,
       email,
       user.email,
+      getCurrentTimestamp(),
       userId,
     ]);
     res.json({ success: true, message: "user updated!" });

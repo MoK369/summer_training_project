@@ -9,7 +9,7 @@ export async function testDBConnection() {
       host: "localhost",
       database: "training_project_db",
       user: "root",
-      password: "",
+      password: "root",
       multipleStatements:true
     });
     console.log("DB Connected Successfully!");

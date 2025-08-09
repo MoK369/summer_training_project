@@ -2,6 +2,7 @@
 import { connection } from "../../db/db.connection.js";
 import { commentValidation } from "../../db/models/comments.model.js";
 import { CustomError } from "../../utils/custom_error.js";
+import { getCurrentTimestamp } from "../../utils/get_current_timestamp.js";
 
 export const createBulkOfComments = async (req, res, next) => {
   try {
@@ -9,7 +10,6 @@ export const createBulkOfComments = async (req, res, next) => {
     if (!Array.isArray(bodyList) || bodyList.length == 0) {
       throw new CustomError("missing array of comments");
     }
-
     const comments = bodyList.map((value) => {
       const { content = null, postId = null, userId = null } = value;
       commentValidation({ content, postId, userId });
@@ -60,16 +60,25 @@ export const updateCommentById = async (req, res, next) => {
     ]);
     const comment = findCommentResult[0][0];
     console.log({ ownerUserId });
-    console.log({ comment });
+    console.log({ findCommentResult });
 
+    if (findCommentResult[0].length == 0) {
+      throw new CustomError("comment is not found!", 404);
+    }
     if (comment.userId != ownerUserId) {
       throw new CustomError("Authorization Failed!", 403);
     }
 
     const updateQuery = `
-    UPDATE comments SET content=? where id=?;
+    UPDATE comments SET content=?,
+     updatedAt = ?
+     where id=?;
     `;
-    const result = await connection.execute(updateQuery, [content, commentId]);
+    const result = await connection.execute(updateQuery, [
+      content,
+      getCurrentTimestamp(),
+      commentId,
+    ]);
     res.json({ success: true, message: "comments updated!" });
   } catch (error) {
     console.log({ error });
@@ -87,8 +96,10 @@ export const searchForComments = async (req, res, next) => {
     if (page <= 0) {
       throw new CustomError("page must be greator than 0");
     }
-    if (pageSize <= 0) {
-      throw new CustomError("pageSize must be greator than 0");
+    if (pageSize <= 0 || pageSize > 10) {
+      throw new CustomError(
+        "pageSize must be greator than 0 and less than or equal 10"
+      );
     }
     //@ts-ignore
     if (isNaN(page) || isNaN(pageSize)) {
@@ -102,7 +113,7 @@ export const searchForComments = async (req, res, next) => {
     const getCommentsQuery = `
     SELECT * from comments WHERE content LIKE ? LIMIT ? OFFSET ?;
     `;
-    const offset = pageSize * page - 1;
+    const offset = pageSize * (page - 1);
     const comments = await connection.execute(getCommentsQuery, [
       `%${word}%`,
       pageSize,
@@ -153,6 +164,9 @@ export const getCommentDetails = async (req, res, next) => {
     const commentDetails = await connection.execute(getCommentDetailsQuery, [
       commentId,
     ]);
+    if (commentDetails[0].length == 0) {
+      throw new CustomError("comment not found!", 404);
+    }
     const {
       user_id,
       user_name,

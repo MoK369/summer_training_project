@@ -1,6 +1,7 @@
 // @ts-check
 import { connection } from "../../db/db.connection.js";
 import { postValidation } from "../../db/models/posts.model.js";
+import { CustomError } from "../../utils/custom_error.js";
 import { getCurrentTimestamp } from "../../utils/get_current_timestamp.js";
 
 export const createPost = async (req, res, next) => {
@@ -31,6 +32,10 @@ export const softDeletePost = async (req, res, next) => {
       getCurrentTimestamp(),
       postId,
     ]);
+    console.log({ result:result[0] });
+    if (result[0].affectedRows == 0) {
+      throw new CustomError("post not found!", 404);
+    }
     res.json({ success: true, message: "Post Deleted!" });
   } catch (error) {
     console.log({ error });
